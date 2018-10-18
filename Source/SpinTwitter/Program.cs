@@ -1,4 +1,5 @@
-﻿using NLog;
+﻿using Exceptionless;
+using NLog;
 using SpinTwitter.Properties;
 using System;
 using System.IO;
@@ -21,8 +22,15 @@ namespace SpinTwitter
         static void Main(string[] args)
         {
             logger.Info("*********************\nStarting v" + Assembly.GetExecutingAssembly().GetName().Version);
+            ExceptionlessClient exceptionless = ExceptionlessClient.Default;
+            exceptionless.Configuration.ServerUrl = "https://except.rthand.com";
+            exceptionless.Startup(Settings.Default.ExceptionlessKey);
+
+            exceptionless.CreateLog("Started sweep", Exceptionless.Logging.LogLevel.Info).Submit();
 
             const string delimiter = "<br>";
+            int publishedTweets = 0;
+            int failedTweets = 0;
 
             TweetinviConfig.CurrentThreadSettings.TweetMode = TweetMode.Extended;
             try
@@ -40,7 +48,7 @@ namespace SpinTwitter
                 try
                 {
                     var rateLimits = RateLimit.GetCurrentCredentialsRateLimits();
-                    logger.Info("Rate limit access remaining {0}, reset on {1}", 
+                    logger.Info("Rate limit access remaining {0}, reset on {1}",
                         rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
 
                     HttpClient client = new HttpClient();
@@ -53,7 +61,6 @@ namespace SpinTwitter
                                 let id = int.Parse(i.Id)
                                 where id > lastPublished
                                 select i;
-
                     foreach (var item in query)
                     {
                         string entireSummary = item.Summary.Text;
@@ -66,12 +73,13 @@ namespace SpinTwitter
                         string feedItemUrl = GetShortenUrl(client, itemUrl);
                         //Console.WriteLine(feedItemUrl);
 
-                        int maxLen = 280;
+                        int maxLen = 270;
                         string tweetmsg;
-                        if (summary.Length > maxLen)
+                        int maxLenWithoutUrl = maxLen - feedItemUrl.Length;
+                        if (summary.Length > maxLenWithoutUrl)
                         {
-                            int maxLenWithElipsis = maxLen - 3;
-                            tweetmsg = string.Format("{0}...{1}", summary.Substring(0, maxLenWithElipsis), feedItemUrl);
+                            int maxLenWithEllipsis = maxLenWithoutUrl - 3;
+                            tweetmsg = string.Format("{0}...{1}", summary.Substring(0, maxLenWithEllipsis), feedItemUrl);
                         }
                         else
                         {
@@ -83,31 +91,35 @@ namespace SpinTwitter
 
                         try
                         {
-                           ITweet tweet = Tweet.PublishTweet(tweetmsg);
-                           if (tweet == null)
-                           {
-                               var exception = ExceptionHandler.GetLastException();
+                            ITweet tweet = Tweet.PublishTweet(tweetmsg);
+                            if (tweet == null)
+                            {
+                                failedTweets++;
+                                var exception = ExceptionHandler.GetLastException();
 
-                               if (exception != null)
-                               {
-                                   logger.Error("Failed publishing tweet, got null as ITweet: StatusCode={0} Description='{1}' Details='{2}'",
-                                       exception.StatusCode, exception.TwitterDescription, exception.TwitterExceptionInfos.First().Message);
-                               }
-                               else
-                               {
-                                   logger.Error("Failed publishing tweet, got null as ITweet without exception");
-                               }
-                           }
-                           else
-                           {
-                               logger.Info("Published tweet {0} succcess.", tweet.Id);
-                               lastPublished = Math.Max(lastPublished, int.Parse(item.Id));
-                               StoreLastPublished(lastPublished);
-                               logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
-                           }
+                                if (exception != null)
+                                {
+                                    string errorMessage = $"Failed publishing tweet, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.First().Message}'";
+                                    logger.Error(errorMessage);
+                                    exceptionless.CreateException(new Exception(errorMessage)).Submit(); ;
+                                }
+                                else
+                                {
+                                    logger.Error("Failed publishing tweet, got null as ITweet without exception");
+                                }
+                            }
+                            else
+                            {
+                                publishedTweets++;
+                                logger.Info("Published tweet {0} success.", tweet.Id);
+                                lastPublished = Math.Max(lastPublished, int.Parse(item.Id));
+                                StoreLastPublished(lastPublished);
+                                logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
+                            }
                         }
                         catch (Exception ex)
                         {
+                            ex.ToExceptionless().Submit();
                             logger.Error(ex, "Failed publishing tweet");
                         }
                     }
@@ -119,8 +131,11 @@ namespace SpinTwitter
             }
             catch (Exception ex)
             {
+                ex.ToExceptionless().Submit();
                 logger.Error(ex, "General failure");
             }
+            exceptionless.CreateLog($"Done sweep with published {publishedTweets} and {failedTweets} failures", Exceptionless.Logging.LogLevel.Info).Submit();
+            exceptionless.ProcessQueue();
         }
 
 
