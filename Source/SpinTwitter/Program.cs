@@ -1,25 +1,28 @@
 ﻿using Exceptionless;
+using Newtonsoft.Json;
 using NLog;
+using SpinTwitter.Models;
 using SpinTwitter.Properties;
+using SpinTwitter.Services.Implementation;
 using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.ServiceModel.Syndication;
-using System.Xml;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Tweetinvi;
 using Tweetinvi.Models;
 
 namespace SpinTwitter
 {
-    class Program
+    public class Program
     {
-        private const string CounterFileName = "counter.txt";
+        private const string PersistanceFileName = "persistance.json";
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             logger.Info("*********************\nStarting v" + Assembly.GetExecutingAssembly().GetName().Version);
             ExceptionlessClient exceptionless = ExceptionlessClient.Default;
@@ -28,7 +31,6 @@ namespace SpinTwitter
 
             exceptionless.CreateLog("Started sweep", Exceptionless.Logging.LogLevel.Info).Submit();
 
-            const string delimiter = "<br>";
             int publishedTweets = 0;
             int failedTweets = 0;
 
@@ -42,7 +44,7 @@ namespace SpinTwitter
                     Settings.Default.token_AccessTokenSecret);
                 Auth.SetCredentials(creds);
 
-                int lastPublished = GetLastPublished();
+                var lastPublished = GetLastPublished();
                 logger.Info("Last published {0}", lastPublished);
 
                 try
@@ -51,47 +53,33 @@ namespace SpinTwitter
                     logger.Info("Rate limit access remaining {0}, reset on {1}",
                         rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
 
-                    HttpClient client = new HttpClient();
-                    var stream = client.GetStreamAsync("http://spin.sos112.si/SPIN2/Javno/OD/Rss.aspx").Result;
-                    XmlReader reader = XmlReader.Create(stream);
-                    SyndicationFeed feed = SyndicationFeed.Load(reader);
-                    logger.Info("Feed loaded");
-
-                    var query = from i in feed.Items.Reverse()
-                                let id = int.Parse(i.Id)
-                                where id > lastPublished
-                                select i;
-                    foreach (var item in query)
+                    Root root;
+                    using (var feed = new SpinFeed())
                     {
-                        string entireSummary = item.Summary.Text;
-                        int start = entireSummary.IndexOf(delimiter);
-                        string summary = entireSummary.Substring(start + delimiter.Length);
+                        root = await feed.GetFeedAsync(CancellationToken.None);
+                    }
 
-                        logger.Info("Publishing item {0}, with summary length {1}", item.Id, summary.Length);
+                    if (root.Value?.Length == 0)
+                    {
+                        logger.Warn("Didn't retrieve any feed items");
+                        return;
+                    }
 
-                        string itemUrl = item.Links.OfType<SyndicationLink>().First().Uri.ToString();
-                        string feedItemUrl = GetShortenUrl(client, itemUrl);
-                        //Console.WriteLine(feedItemUrl);
+                    PurgeLastPublished(lastPublished, root.Value);
 
-                        int maxLen = 270;
-                        string tweetmsg;
-                        int maxLenWithoutUrl = maxLen - feedItemUrl.Length;
-                        if (summary.Length > maxLenWithoutUrl)
-                        {
-                            int maxLenWithEllipsis = maxLenWithoutUrl - 3;
-                            tweetmsg = string.Format("{0}...{1}", summary.Substring(0, maxLenWithEllipsis), feedItemUrl);
-                        }
-                        else
-                        {
-                            tweetmsg = string.Format("{0} {1}", summary.Substring(0, Math.Min(summary.Length, maxLen - 1)), feedItemUrl);
-                        }
-                        //Console.WriteLine("----");
-                        //Console.WriteLine(tweetmsg);
+                    var newValues = (from v in root.Value
+                                    where !lastPublished.Dates.Contains(v.ReportDate)
+                                    select v).Reverse().ToArray();
+
+                    foreach (var item in newValues)
+                    {
+                        string tweetmsg = CreateTweet(item);
+
                         logger.Info("Twitter message (length {1}) is '{0}'", tweetmsg, tweetmsg.Length);
 
                         try
                         {
-                            ITweet tweet = Tweet.PublishTweet(tweetmsg);
+                            var tweet = Tweet.PublishTweet(tweetmsg);
                             if (tweet == null)
                             {
                                 failedTweets++;
@@ -111,8 +99,8 @@ namespace SpinTwitter
                             else
                             {
                                 publishedTweets++;
-                                logger.Info("Published tweet {0} success.", tweet.Id);
-                                lastPublished = Math.Max(lastPublished, int.Parse(item.Id));
+                                //logger.Info("Published tweet {0} success.", tweet.Id);
+                                lastPublished.Dates.Add(item.ReportDate);
                                 StoreLastPublished(lastPublished);
                                 logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
                             }
@@ -138,36 +126,67 @@ namespace SpinTwitter
             exceptionless.ProcessQueue();
         }
 
-
-        private static int GetLastPublished()
+        public static void PurgeLastPublished(Persistence persistence, Value[] values)
         {
-            string fileName = GetFilePath(CounterFileName);
+            var dates = values.Select(d => d.ReportDate).ToArray();
+            for (int i = persistence.Dates.Count-1; i >= 0; i--)
+            {
+                if (!dates.Contains(persistence.Dates[i]))
+                {
+                    persistence.Dates.RemoveAt(i);
+                }
+            }
+        }
+
+        public static string CreateTweet(Value value)
+        {
+            const int maxLen = 270;
+            const string url = "https://spin3.sos112.si/javno/pregled";
+            string text = $"{value.Title}\n{value.ReportDate:dd.MM HH:mm}\n{value.Text}";
+            string tweetmsg;
+            int maxLenWithoutUrl = maxLen - url.Length;
+            if (text.Length > maxLenWithoutUrl)
+            {
+                const string ellipsis = "...\n";
+                int maxLenWithEllipsis = maxLenWithoutUrl - ellipsis.Length;
+                tweetmsg = $"{text.Substring(0, maxLenWithEllipsis)}{ellipsis}{url}";
+            }
+            else
+            {
+                tweetmsg = $"{ text.Substring(0, Math.Min(text.Length, maxLen - 1))}\n{url}";
+            }
+            return tweetmsg;
+        }
+
+        static Persistence GetLastPublished()
+        {
+            string fileName = GetFilePath(PersistanceFileName);
             if (File.Exists(fileName))
             {
                 string content = File.ReadAllText(fileName);
-                int result = int.Parse(content);
-                return result;
+                var persistance = JsonConvert.DeserializeObject<Persistence>(content);
+                return persistance;
             }
             else
-                return 0;
+                return new Persistence();
         }
 
-        private static void StoreLastPublished(int value)
+        static void StoreLastPublished(Persistence value)
         {
-            string fileName = GetFilePath(CounterFileName);
+            string fileName = GetFilePath(PersistanceFileName);
             if (File.Exists(fileName))
             {
                 File.Delete(fileName);
             }
-            File.WriteAllText(fileName, value.ToString());
+            File.WriteAllText(fileName, JsonConvert.SerializeObject(value));
         }
 
-        private static string GetFilePath(string name)
+        static string GetFilePath(string name)
         {
             return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), name);
         }
 
-        private static string GetShortenUrl(HttpClient client, string originalUrl)
+        static string GetShortenUrl(HttpClient client, string originalUrl)
         {
             try
             {

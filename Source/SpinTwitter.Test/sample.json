@@ -1,0 +1,326 @@
+﻿{
+  "value": [
+    {
+      "wgsLat": 46.056,
+      "wgsLon": 14.541,
+      "prijavaCas": "2019-04-08T14:20:10.46+02:00",
+      "obcinaNaziv": "LJUBLJANA",
+      "intervencijaVrstaNaziv": "Tehnična in druga pomoč",
+      "ikona": 0,
+      "barva": 0
+    },
+    {
+      "wgsLat": 46.162,
+      "wgsLon": 14.661,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T14:02:22.523+02:00",
+      "obcinaNaziv": "LUKOVICA",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 0,
+      "barva": 0
+    },
+    {
+      "wgsLat": 46.089,
+      "wgsLon": 14.508,
+      "prijavaCas": "2019-04-08T13:58:00.86+02:00",
+      "obcinaNaziv": "LJUBLJANA",
+      "intervencijaVrstaNaziv": "Tehnična in druga pomoč",
+      "ikona": 0,
+      "barva": 0
+    },
+    {
+      "wgsLat": 46.198,
+      "wgsLon": 14.410,
+      "dogodekNaziv": "Reševanje obolelih in helikopterski prevozi med bolnišnicami",
+      "prijavaCas": "2019-04-08T13:55:36.897+02:00",
+      "obcinaNaziv": "ŠENČUR",
+      "intervencijaVrstaNaziv": "Druge nesreče/dogodki",
+      "ikona": 0,
+      "barva": 0
+    },
+    {
+      "wgsLat": 45.736,
+      "wgsLon": 15.221,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T13:52:44.16+02:00",
+      "obcinaNaziv": "NOVO MESTO",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 0,
+      "barva": 0
+    },
+    {
+      "wgsLat": 46.548,
+      "wgsLon": 14.922,
+      "dogodekNaziv": "Reševanje obolelih in helikopterski prevozi med bolnišnicami",
+      "prijavaCas": "2019-04-08T13:19:21.973+02:00",
+      "obcinaNaziv": "PREVALJE",
+      "intervencijaVrstaNaziv": "Druge nesreče/dogodki",
+      "ikona": 0,
+      "barva": 0
+    },
+    {
+      "wgsLat": 46.525,
+      "wgsLon": 16.191,
+      "dogodekNaziv": "Reševanje obolelih in helikopterski prevozi med bolnišnicami",
+      "prijavaCas": "2019-04-08T12:50:15.163+02:00",
+      "obcinaNaziv": "LJUTOMER",
+      "besedilo": "Ob 12.21 je posadka helikopterja SV, v spremstvu ekipe HENMP iz Ljutomera prepeljala obolelo osebo v UKC Maribor. Kraj pristanka helikopterja so zavarovali gasilci PGD Ljutomer.",
+      "intervencijaVrstaNaziv": "Druge nesreče/dogodki",
+      "ikona": 2,
+      "barva": 1
+    },
+    {
+      "wgsLat": 45.979,
+      "wgsLon": 14.677,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T12:45:55.37+02:00",
+      "obcinaNaziv": "GROSUPLJE",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 0,
+      "barva": 0
+    },
+    {
+      "wgsLat": 46.420,
+      "wgsLon": 15.215,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T11:31:47.85+02:00",
+      "obcinaNaziv": "MISLINJA",
+      "besedilo": "Ob 11.29 je v Srednjem Doliču, občina Mislinja, osebno vozilo zapeljalo na nabrežino in se prevrnilo na streho. Gasilci PGD Slovenj Gradec so proti naletno in proti požarno zavarovali kraj nesreče, na vozilu odklopili akumulator, cestišče posuli z vpojnimi sredstvi, avto postavili na kolesa in ga umaknili s ceste. Poškodovano osebo pa so reševalci ZRCK Ravne na Koroškem prepeljali v Splošno bolnišnico Slovenj Gradec.\n",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 1
+    },
+    {
+      "wgsLat": 46.560,
+      "wgsLon": 14.991,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T10:25:30.593+02:00",
+      "obcinaNaziv": "RAVNE NA KOROŠKEM",
+      "besedilo": "Ob 11.06 je na relaciji Dravograd-Ravne na Koroškem, v naselju Tolsti vrh, občina Ravne na Koroškem, voznik osebnega vozila zapeljal s cestišča v jarek in se prevrnil na bok. Posredovali so poklicni gasilci KGZ Ravne na Koroškem, ki so proti požarno in proti naletno zavarovali kraj ter na vozilu odklopili akumulator. V nesreči ni bilo poškodovanih.",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 2
+    },
+    {
+      "wgsLat": 46.169,
+      "wgsLon": 14.685,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T10:25:09.673+02:00",
+      "obcinaNaziv": "LUKOVICA",
+      "besedilo": "Ob 10.20 je pri gradu Brdo, v naselju Brdo pri Lukovici, občina Lukovica, voznik osebnega vozila trčilo v drevo. Posredovali so gasilci CZR Domžale, PGD Prevoje in PGD Blagovica, ki so zavarovali kraj dogodka, odklopili akumulator na vozilu ter nevtralizirali razlite motorne tekočine. Gasilci so nudili prvo pomoč poškodovani osebi do prihoda reševalcev NMP Domžale, kateri so poškodovano osebo dokončno oskrbeli ter jo prepeljali v nadaljnjo oskrbo v UKC Ljubljana.",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 2
+    },
+    {
+      "wgsLat": 46.301,
+      "wgsLon": 14.421,
+      "dogodekNaziv": "Požari na sredstvih cestnega prometa",
+      "prijavaCas": "2019-04-08T10:09:17.493+02:00",
+      "obcinaNaziv": "PREDDVOR",
+      "besedilo": "Ob 10.00 je v naselju Preddvor, občina Preddvor, zagorelo manjše tovorno vozilo. Pred prihodom gasilcev na kraj dogodka je voznik že delno pogasil požar. Gasilci JZ GRS Kranj in PGD Preddvor so odklopili akumulator in pregledali vozilo s termovizijsko kamero. Poškodovan ni bil nihče.",
+      "intervencijaVrstaNaziv": "Požar, eksplozija",
+      "ikona": 4,
+      "barva": 2
+    },
+    {
+      "wgsLat": 45.976,
+      "wgsLon": 14.611,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T09:05:52.733+02:00",
+      "obcinaNaziv": "GROSUPLJE",
+      "besedilo": "Ob 8.59 je na avtocesti Grosuplje - Ljubljana, pred predorom Mali Vrh prišlo do naleta treh osebnih vozil. Posredovali so gasilci GB Ljubljana, PGD Šmarje Sap in PGD Grosuplje. Gasilci so zavarovali kraj dogodka, opravili odklop akumulatorjev na vozilih ter oskrbeli poškodovano osebo do prihoda reševalcev NMP UKC Ljubljana. Poškodovana oseba, je bila prepeljana v nadaljno oskrbo v UKC Ljubljana.\n",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 2
+    },
+    {
+      "wgsLat": 45.786,
+      "wgsLon": 14.090,
+      "dogodekNaziv": "Najdbe neekspodiranih minsko-eksplozivnih sredstev",
+      "prijavaCas": "2019-04-08T08:58:45.43+02:00",
+      "obcinaNaziv": "POSTOJNA",
+      "besedilo": "Ob 8.31 je v naselju Strane, občina Postojna, občan na vrtu našel ročno bombo, italijanske izdelave iz obdobja II. svetovne vojne. Pripadnika državne enote za varstvo pred neeksplodiranimi ubojnimi sredstvi Notranjske in Ljubljanske regije, sta nevarno najdbo uničila na kraju najdbe. Kraj uničenja so zavarovali gasilci PGD Veliko Ubeljsko in Policija.",
+      "intervencijaVrstaNaziv": "Najdbe NUS",
+      "ikona": 7,
+      "barva": 2
+    },
+    {
+      "wgsLat": 45.862,
+      "wgsLon": 15.141,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T07:55:22.723+02:00",
+      "obcinaNaziv": "NOVO MESTO",
+      "besedilo": "Ob 7.52 je na cesti Novo mesto—Trebnje pri odcepu za Kamenje, občina Novo mesto, tovorno vozilo v izogib trčenju z osebnim vozilom zapeljalo s ceste in nasedlo na kovinsko odbojno ograjo. V nesreči ni bilo poškodovanih. Gasilci GRC Novo mesto so zavarovali kraj nesreče, razrezali odbojno ograjo, pomagali vozilo postaviti na cesto in posuli razlite motorne tekočine.",
+      "intervencijaVrstaNaziv": "Druge nesreče/dogodki",
+      "ikona": 3,
+      "barva": 3
+    },
+    {
+      "wgsLat": 45.911,
+      "wgsLon": 15.481,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-08T06:10:23.517+02:00",
+      "obcinaNaziv": "KRŠKO",
+      "besedilo": "Ob 5.51 se je na odseku avtoceste Čatež ob Savi–Drnovo, pred odcepom za Drnovo, občina Krško, zgodila prometna nesreča, v kateri je bilo udeleženo osebno vozilo. Pri tem se je ena oseba poškodovala. Gasilci PGE Krško so zavarovali kraj dogodka, na vozilu odklopili baterijo in nudili prvo pomoč poškodovani osebi. Reševalci NMP Brežice so osebo na kraju oskrbeli in prepeljali v UC SB Brežice.",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 3
+    },
+    {
+      "wgsLat": 46.197,
+      "wgsLon": 14.601,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-07T23:21:08.257+02:00",
+      "obcinaNaziv": "KAMNIK",
+      "besedilo": "Ob 23.21 je v Volčjem Potoku, občina Kamnik, osebno vozilo trčilo v ograjo ter se odbilo na pločnik. Posredovali so gasilci PGD Kamnik, ki so zavarovali kraj nesreče, odklopili akumulator, osvetljevali kraj nesreče ter pometli cestišče. Reševalci NMP Kamnik so eno osebo prepeljali v bolnišnico.",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.661,
+      "wgsLon": 16.166,
+      "dogodekNaziv": "Tehnična in druga pomoč",
+      "prijavaCas": "2019-04-07T19:17:59.823+02:00",
+      "obcinaNaziv": "MURSKA SOBOTA",
+      "besedilo": "Ob 19.17 je na Ulici Staneta Rozmana v Murski Soboti v okvarjenem dvigalu stanovanjskega bloka ostal ujet občan. Rešila sta ga gasilca PGD Murska Sobota.\n\n",
+      "intervencijaVrstaNaziv": "Tehnična in druga pomoč",
+      "ikona": 8,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.576,
+      "wgsLon": 16.159,
+      "dogodekNaziv": "Požari v naravi oziroma na prostem",
+      "prijavaCas": "2019-04-07T19:06:57.51+02:00",
+      "obcinaNaziv": "VERŽEJ",
+      "besedilo": "Ob 19.06 sta med naseljema Veržej in Križevci pri Ljutomeru, občina Veržej, gorela trava in grmičevje v melioracijskem jarku v dolžini okoli 20 metrov. Požar so pogasili gasilci PGD Veržej.",
+      "intervencijaVrstaNaziv": "Požar, eksplozija",
+      "ikona": 4,
+      "barva": 4
+    },
+    {
+      "wgsLat": 45.891,
+      "wgsLon": 13.708,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-07T19:03:18.49+02:00",
+      "obcinaNaziv": "NOVA GORICA",
+      "besedilo": "Ob 18.57 je v Prvačini, občina Nova Gorica, občan z osebnim vozilom zapeljal s cestišča in se zaletel v telefonski drog, pri tem se je poškodoval, kabel pa je padel čez cestišče, zato je bila cesta zaprta. Poškodovanega so ga reševalci iz NMP Nova Gorica odpeljali na zdravljenje v šempetrsko bolnišnico.",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.337,
+      "wgsLon": 15.426,
+      "dogodekNaziv": "Nesreče z nevarnimi snovmi v industriji, industrijske nesreče",
+      "prijavaCas": "2019-04-07T18:21:13.213+02:00",
+      "obcinaNaziv": "SLOVENSKE KONJICE",
+      "besedilo": "Ob 18.15 je na Mestnem trgu v Slovenskih Konjicah občan opazil onesnaženje reke Dravinje. Gasilci PGD Slovenske Konjice so pregledali območje onesnaženja ter nudili pomoč uslužbencu pristojne službe.",
+      "intervencijaVrstaNaziv": "Onesnaženje, nesreče z nevarnimi snovmi",
+      "ikona": 5,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.362,
+      "wgsLon": 15.078,
+      "dogodekNaziv": "Delovne nesreče",
+      "prijavaCas": "2019-04-07T17:03:07.463+02:00",
+      "obcinaNaziv": "VELENJE",
+      "besedilo": "Ob 16.59 si je v Podgorju v občini Velenje občan pri delu s krožno žago odrezal prsta na roki. Prvo pomoč so mu nudili prisotni in ga odpeljali v ZD Velenje. Reševalci NMP Velenje so poškodovanca odpeljali v SB Celje.",
+      "intervencijaVrstaNaziv": "Druge nesreče/dogodki",
+      "ikona": 2,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.101,
+      "wgsLon": 14.525,
+      "dogodekNaziv": "Tehnična in druga pomoč",
+      "prijavaCas": "2019-04-07T15:58:27.943+02:00",
+      "obcinaNaziv": "LJUBLJANA",
+      "besedilo": "Ob 15.46 je pred večstanovanjskim objektom na Dunajski cesti v Ljubljani v zemlji počila večja vodovodna cev. Pri tem je na površje začela iztekati voda. Gasilci GB Ljubljana so zavarovali kraj dogodka, delavci VO-KE pa so zaprli vodovodne ventile in preprečili iztekanje.",
+      "intervencijaVrstaNaziv": "Tehnična in druga pomoč",
+      "ikona": 8,
+      "barva": 4
+    },
+    {
+      "wgsLat": 45.959,
+      "wgsLon": 14.395,
+      "dogodekNaziv": "Reševanje obolelih in helikopterski prevozi med bolnišnicami",
+      "prijavaCas": "2019-04-07T14:47:48.813+02:00",
+      "obcinaNaziv": "BREZOVICA",
+      "besedilo": "Ob 14.44 je v naselju Prevalje pod Krimom, občina Brezovica oseba zaradi slabosti potrebovala pomoč. Prvi posredovalci iz PGD Kamnik pod Krimom so ji nudili pomoč z AED do prihoda reševalcev NMP. Oživljanje je bilo neuspešno.",
+      "intervencijaVrstaNaziv": "Druge nesreče/dogodki",
+      "ikona": 2,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.051,
+      "wgsLon": 14.112,
+      "dogodekNaziv": "Tehnična in druga pomoč",
+      "prijavaCas": "2019-04-07T13:28:23.68+02:00",
+      "obcinaNaziv": "ŽIRI",
+      "besedilo": "Ob 11.03 so v Čevljarski ulici v Žireh gasilci PGD Dobračeva iz stanovanjskega objekta izčrpali vodo.",
+      "intervencijaVrstaNaziv": "Tehnična in druga pomoč",
+      "ikona": 8,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.240,
+      "wgsLon": 14.365,
+      "dogodekNaziv": "Požari v stanovanjskih stavbah",
+      "prijavaCas": "2019-04-07T13:22:44.453+02:00",
+      "obcinaNaziv": "KRANJ",
+      "besedilo": "Ob 13.19 je v Ulici Juleta Gabrovška v Kranju zagorel pralni stroj. Gasilci JZ GRS Kranj so požar pogasili, prezračili stanovanje, iznesli ožgane predmete in pomerili koncentracijo plinov.",
+      "intervencijaVrstaNaziv": "Požar, eksplozija",
+      "ikona": 4,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.254,
+      "wgsLon": 15.118,
+      "dogodekNaziv": "Požari v stanovanjskih stavbah",
+      "prijavaCas": "2019-04-07T11:55:04.317+02:00",
+      "obcinaNaziv": "ŽALEC",
+      "besedilo": "Ob 11.52 se je v Soseki v Šempetru v Savinjiski dolini v občini Žalec smodila hrana na štedilniku v kuhinji. Občani so pred prihodom gasilcev hrano odstranili. Gasilci PGD Šempeter v Savinjiski dolini so prezračili in pregledali prostore.",
+      "intervencijaVrstaNaziv": "Požar, eksplozija",
+      "ikona": 4,
+      "barva": 4
+    },
+    {
+      "wgsLat": 45.804,
+      "wgsLon": 15.169,
+      "dogodekNaziv": "Sproščanja nevarnih plinov",
+      "prijavaCas": "2019-04-07T09:57:15.333+02:00",
+      "obcinaNaziv": "NOVO MESTO",
+      "besedilo": "Ob 9.44 so na Rozmanovi ulici v Novem mestu v revizijskem jašku zaznali povečano koncentracijo plina. Dežurni delavec podjetja Istrabenz plini je ugotovil, da je bilo zaradi izpada električne energije prekinjeno prezračevanje v jašku zato je zaudarjalo po kanalizaciji.",
+      "intervencijaVrstaNaziv": "Onesnaženje, nesreče z nevarnimi snovmi",
+      "ikona": 5,
+      "barva": 4
+    },
+    {
+      "wgsLat": 46.315,
+      "wgsLon": 14.366,
+      "dogodekNaziv": "Požari v stanovanjskih stavbah",
+      "prijavaCas": "2019-04-07T09:45:52.137+02:00",
+      "obcinaNaziv": "KRANJ",
+      "besedilo": "Ob 7.45 so v Trsteniku, občina Kranj, gorele saje v dimniku stanovanjske hiše. Ogenj se je razširil na tram strešne konstrukcije objekta. Gasilci JZ GRS Kranj so podrli del stene, pogasili tleč tram in pregledali okolico s termovizijsko kamero.",
+      "intervencijaVrstaNaziv": "Požar, eksplozija",
+      "ikona": 4,
+      "barva": 4
+    },
+    {
+      "wgsLat": 45.789,
+      "wgsLon": 15.115,
+      "dogodekNaziv": "Nesreče v cestnem prometu",
+      "prijavaCas": "2019-04-07T02:09:30.887+02:00",
+      "obcinaNaziv": "STRAŽA",
+      "besedilo": "Ob 2.03 je pri naselju Potok, občina Straža, osebno vozilo zapeljalo s ceste in trčilo v odbojno ograjo. Gasilci GRC Novo mesto so zavarovali kraj nesreče, razrezali odbojno ograjo, da so lahko vozilo postavili na cestišče, razsvetljevali kraj dogodka in odklopili akumulator na vozilu. Poškodovano voznico so oskrbeli reševalci nujne medicinske pomoči Novo mesto in jo prepeljali v Splošno bolnišnico Novo mesto.",
+      "intervencijaVrstaNaziv": "Prometna nesreča",
+      "ikona": 3,
+      "barva": 4
+    }
+  ],
+  "statusCode": 200
+}

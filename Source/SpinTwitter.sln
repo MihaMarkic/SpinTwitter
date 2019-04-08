@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2009
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28729.10
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpinTwitter", "SpinTwitter\SpinTwitter.csproj", "{D842BA0B-91DB-4045-BCD2-4B0F54965782}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpinTwitter", "SpinTwitter\SpinTwitter.csproj", "{D842BA0B-91DB-4045-BCD2-4B0F54965782}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpinTwitter.Test", "SpinTwitter.Test\SpinTwitter.Test.csproj", "{730490C2-D511-47EB-B787-51E6748810BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{D842BA0B-91DB-4045-BCD2-4B0F54965782}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D842BA0B-91DB-4045-BCD2-4B0F54965782}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D842BA0B-91DB-4045-BCD2-4B0F54965782}.Release|Any CPU.Build.0 = Release|Any CPU
+		{730490C2-D511-47EB-B787-51E6748810BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{730490C2-D511-47EB-B787-51E6748810BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{730490C2-D511-47EB-B787-51E6748810BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{730490C2-D511-47EB-B787-51E6748810BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
