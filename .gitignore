@@ -125,3 +125,4 @@ Settings.settings
 Settings.Designer.cs
 # don't store artwork
 Artwork
+*.nogit.*
