@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using NLog;
 using SpinTwitter.Models;
-using SpinTwitter.Properties;
 using SpinTwitter.Services.Implementation;
 using System;
 using System.IO;
@@ -27,7 +26,7 @@ namespace SpinTwitter
             logger.Info("*********************\nStarting v" + Assembly.GetExecutingAssembly().GetName().Version);
             ExceptionlessClient exceptionless = ExceptionlessClient.Default;
             exceptionless.Configuration.ServerUrl = "https://except.rthand.com";
-            exceptionless.Startup(Settings.Default.ExceptionlessKey);
+            exceptionless.Startup(Settings.ExceptionlessKey);
 
             exceptionless.CreateLog("Started sweep", Exceptionless.Logging.LogLevel.Info).Submit();
 
@@ -38,20 +37,31 @@ namespace SpinTwitter
             try
             {
                 var creds = new TwitterCredentials(
-                    Settings.Default.token_ConsumerKey,
-                    Settings.Default.token_ConsumerSecret,
-                    Settings.Default.token_AccessToken,
-                    Settings.Default.token_AccessTokenSecret);
+                    Settings.ConsumerKey,
+                    Settings.ConsumerSecret,
+                    Settings.AccessToken,
+                    Settings.AccessTokenSecret);
                 Auth.SetCredentials(creds);
 
+                var user = await UserAsync.GetAuthenticatedUser();
+                logger.Info($"User is {user.Id}");
                 var lastPublished = GetLastPublished();
-                logger.Info("Last published {0}", lastPublished);
+                logger.Info("Last published {0}", string.Join(", ", lastPublished.Dates.Select(d => d.ToString("dd.MM.yyyy"))));
 
                 try
                 {
                     var rateLimits = RateLimit.GetCurrentCredentialsRateLimits();
-                    logger.Info("Rate limit access remaining {0}, reset on {1}",
-                        rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
+                    if (rateLimits is null)
+                    {
+                        string errorMessage = "Couldn't retrieve rate limits, will exit since something went wrong";
+                        logger.Error(errorMessage);
+                        exceptionless.CreateException(new Exception(errorMessage)).Submit();
+                    }
+                    else
+                    {
+                        logger.Info("Rate limit access remaining {0}, reset on {1}",
+                            rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
+                    }
 
                     Root root;
                     using (var feed = new SpinFeed())
@@ -65,12 +75,12 @@ namespace SpinTwitter
                         return;
                     }
 
-                    PurgeLastPublished(lastPublished, root.Value);
+                    PurgeLastPublished(lastPublished, root.Value!);
 
                     var newValues = (from v in root.Value
-                                    where !lastPublished.Dates.Contains(v.ReportDate)
+                                    where !lastPublished.Dates.Contains(v.ReportDate) && !string.IsNullOrEmpty(v.Text)
                                     select v).Reverse().ToArray();
-
+                    logger.Info($"There are {newValues.Length} new tweets to publish");
                     foreach (var item in newValues)
                     {
                         string tweetmsg = CreateTweet(item);
@@ -87,9 +97,9 @@ namespace SpinTwitter
 
                                 if (exception != null)
                                 {
-                                    string errorMessage = $"Failed publishing tweet, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.First().Message}'";
+                                    string errorMessage = $"Failed publishing tweet, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.FirstOrDefault()?.Message}'";
                                     logger.Error(errorMessage);
-                                    exceptionless.CreateException(new Exception(errorMessage)).Submit(); ;
+                                    exceptionless.CreateException(new Exception(errorMessage)).Submit();
                                 }
                                 else
                                 {
@@ -186,27 +196,27 @@ namespace SpinTwitter
             return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), name);
         }
 
-        static string GetShortenUrl(HttpClient client, string originalUrl)
-        {
-            try
-            {
-                var url = string.Format("http://api.bit.ly/v3/shorten?login={0}&apiKey={1}&format={2}&longUrl={3}",
-                        Settings.Default.bitly_Username, Settings.Default.bitly_APIKey, "xml", originalUrl);
-                System.IO.Stream response = client.GetStreamAsync(url).Result;
-                XDocument doc = XDocument.Load(response);
-                XElement statusCodeNode = doc.Root.Element("status_code");
-                if (statusCodeNode.Value == "200")
-                {
-                    string shortenUrl = doc.Root.Element("data").Element("url").Value;
-                    return shortenUrl;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, $"Failed shortening url {originalUrl}. Will use original.");
-                return originalUrl;
-            }
-            return originalUrl;
-        }
+        //static string GetShortenUrl(HttpClient client, string originalUrl)
+        //{
+        //    try
+        //    {
+        //        var url = string.Format("http://api.bit.ly/v3/shorten?login={0}&apiKey={1}&format={2}&longUrl={3}",
+        //                Settings.Username, Settings.APIKey, "xml", originalUrl);
+        //        System.IO.Stream response = client.GetStreamAsync(url).Result;
+        //        XDocument doc = XDocument.Load(response);
+        //        XElement statusCodeNode = doc.Root.Element("status_code");
+        //        if (statusCodeNode.Value == "200")
+        //        {
+        //            string shortenUrl = doc.Root.Element("data").Element("url").Value;
+        //            return shortenUrl;
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.Error(ex, $"Failed shortening url {originalUrl}. Will use original.");
+        //        return originalUrl;
+        //    }
+        //    return originalUrl;
+        //}
     }
 }
