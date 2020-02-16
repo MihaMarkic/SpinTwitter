@@ -4,16 +4,18 @@ using NLog;
 using SpinTwitter.Models;
 using SpinTwitter.Services.Implementation;
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Tweetinvi;
 using Tweetinvi.Models;
 
+[assembly: InternalsVisibleTo("SpinTwitter.Test")]
 namespace SpinTwitter
 {
     public class Program
@@ -25,10 +27,12 @@ namespace SpinTwitter
         {
             logger.Info("*********************\nStarting v" + Assembly.GetExecutingAssembly().GetName().Version);
             ExceptionlessClient exceptionless = ExceptionlessClient.Default;
+#if !DEBUG
             exceptionless.Configuration.ServerUrl = "https://except.rthand.com";
             exceptionless.Startup(Settings.ExceptionlessKey);
 
             exceptionless.CreateLog("Started sweep", Exceptionless.Logging.LogLevel.Info).Submit();
+#endif
 
             int publishedTweets = 0;
             int failedTweets = 0;
@@ -46,7 +50,9 @@ namespace SpinTwitter
                 var user = await UserAsync.GetAuthenticatedUser();
                 logger.Info($"User is {user.Id}");
                 var lastPublished = GetLastPublished();
-                logger.Info("Last published {0}", string.Join(", ", lastPublished.Dates.Select(d => d.ToString("dd.MM.yyyy"))));
+                logger.Info($"Last published entered: {lastPublished.LastEntered} verified: {lastPublished.LastVerified}");
+
+                using SpinRss rss = new SpinRss();
 
                 try
                 {
@@ -63,62 +69,33 @@ namespace SpinTwitter
                             rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
                     }
 
-                    Root root;
-                    using (var feed = new SpinFeed())
-                    {
-                        root = await feed.GetFeedAsync(CancellationToken.None);
-                    }
+                    var rssEnteredItems = await rss.GetFeedAsync(SpinRssType.Entered, CancellationToken.None);
+                    var rssVerifiedItems = await rss.GetFeedAsync(SpinRssType.Verified, CancellationToken.None);
 
-                    if (root.Value?.Length == 0)
-                    {
-                        logger.Warn("Didn't retrieve any feed items");
-                        return;
-                    }
+                    var newValues = rssEnteredItems.TakeNew(lastPublished.LastEntered).Reverse()
+                        .Union(rssVerifiedItems.TakeNew(lastPublished.LastVerified).Reverse())
+                        .ToImmutableArray();
 
-                    PurgeLastPublished(lastPublished, root.Value!);
-
-                    var newValues = (from v in root.Value
-                                    where !lastPublished.Dates.Contains(v.ReportDate) && !string.IsNullOrEmpty(v.Text)
-                                    select v).Reverse().ToArray();
                     logger.Info($"There are {newValues.Length} new tweets to publish");
                     foreach (var item in newValues)
                     {
-                        string tweetmsg = CreateTweet(item);
-
-                        logger.Info("Twitter message (length {1}) is '{0}'", tweetmsg, tweetmsg.Length);
-
-                        try
+                        bool success = ProcessRssItem(exceptionless, lastPublished, item);
+                        if (success)
                         {
-                            var tweet = Tweet.PublishTweet(tweetmsg);
-                            if (tweet == null)
+                            publishedTweets++;
+                            switch (item.Type)
                             {
-                                failedTweets++;
-                                var exception = ExceptionHandler.GetLastException();
-
-                                if (exception != null)
-                                {
-                                    string errorMessage = $"Failed publishing tweet, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.FirstOrDefault()?.Message}'";
-                                    logger.Error(errorMessage);
-                                    exceptionless.CreateException(new Exception(errorMessage)).Submit();
-                                }
-                                else
-                                {
-                                    logger.Error("Failed publishing tweet, got null as ITweet without exception");
-                                }
-                            }
-                            else
-                            {
-                                publishedTweets++;
-                                //logger.Info("Published tweet {0} success.", tweet.Id);
-                                lastPublished.Dates.Add(item.ReportDate);
-                                StoreLastPublished(lastPublished);
-                                logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
+                                case SpinRssType.Entered:
+                                    lastPublished.LastEntered = item.Id;
+                                    break;
+                                case SpinRssType.Verified:
+                                    lastPublished.LastVerified = item.Id;
+                                    break;
                             }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            ex.ToExceptionless().Submit();
-                            logger.Error(ex, "Failed publishing tweet");
+                            failedTweets++;
                         }
                     }
                 }
@@ -136,23 +113,53 @@ namespace SpinTwitter
             exceptionless.ProcessQueue();
         }
 
-        public static void PurgeLastPublished(Persistence persistence, Value[] values)
+        static bool ProcessRssItem(ExceptionlessClient exceptionless, PersistenceRss lastPublished, RssItem item)
         {
-            var dates = values.Select(d => d.ReportDate).ToArray();
-            for (int i = persistence.Dates.Count-1; i >= 0; i--)
+            string tweetmsg = CreateTweet(item);
+
+            logger.Info("Twitter message (length {1}) is '{0}'", tweetmsg, tweetmsg.Length);
+
+            try
             {
-                if (!dates.Contains(persistence.Dates[i]))
+                var tweet = Tweet.PublishTweet(tweetmsg);
+                if (tweet == null)
                 {
-                    persistence.Dates.RemoveAt(i);
+                    var exception = ExceptionHandler.GetLastException();
+
+                    if (exception != null)
+                    {
+                        string errorMessage = $"Failed publishing tweet, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.FirstOrDefault()?.Message}'";
+                        logger.Error(errorMessage);
+                        exceptionless.CreateException(new Exception(errorMessage)).Submit();
+                    }
+                    else
+                    {
+                        logger.Error("Failed publishing tweet, got null as ITweet without exception");
+                    }
+                    return false;
+                }
+                else
+                {
+                    //logger.Info("Published tweet {0} success.", tweet.Id);
+                    //lastPublished.Dates.Add(item.ReportDate);
+                    StoreLastPublished(lastPublished);
+                    logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
+                    return true;
                 }
             }
+            catch (Exception ex)
+            {
+                ex.ToExceptionless().Submit();
+                logger.Error(ex, "Failed publishing tweet");
+            }
+            return false;
         }
 
-        public static string CreateTweet(Value value)
+        public static string CreateTweet(RssItem value)
         {
             const int maxLen = 270;
-            const string url = "https://spin3.sos112.si/javno/pregled";
-            string text = $"{value.Title}\n{value.ReportDate:dd.MM HH:mm}\n{value.Text}";
+            string url = value.Link;
+            string text = $"{value.Title}\n{value.Description}";
             string tweetmsg;
             int maxLenWithoutUrl = maxLen - url.Length;
             if (text.Length > maxLenWithoutUrl)
@@ -168,20 +175,20 @@ namespace SpinTwitter
             return tweetmsg;
         }
 
-        static Persistence GetLastPublished()
+        static PersistenceRss GetLastPublished()
         {
             string fileName = GetFilePath(PersistanceFileName);
             if (File.Exists(fileName))
             {
                 string content = File.ReadAllText(fileName);
-                var persistance = JsonConvert.DeserializeObject<Persistence>(content);
+                var persistance = JsonConvert.DeserializeObject<PersistenceRss>(content);
                 return persistance;
             }
             else
-                return new Persistence();
+                return new PersistenceRss();
         }
 
-        static void StoreLastPublished(Persistence value)
+        static void StoreLastPublished(PersistenceRss value)
         {
             string fileName = GetFilePath(PersistanceFileName);
             if (File.Exists(fileName))
@@ -193,7 +200,7 @@ namespace SpinTwitter
 
         static string GetFilePath(string name)
         {
-            return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), name);
+            return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, name);
         }
 
         //static string GetShortenUrl(HttpClient client, string originalUrl)
@@ -218,5 +225,20 @@ namespace SpinTwitter
         //    }
         //    return originalUrl;
         //}
+    }
+
+    public static class Extensions
+    {
+        public static IEnumerable<RssItem> TakeNew(this IEnumerable<RssItem> items, uint? last)
+        {
+            if (!last.HasValue)
+            {
+                return items;
+            }
+            else
+            {
+                return items.TakeWhile(i => i.Id != last.Value);
+            }
+        }
     }
 }
