@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -34,9 +35,6 @@ namespace SpinTwitter
             exceptionless.CreateLog("Started sweep", Exceptionless.Logging.LogLevel.Info).Submit();
 #endif
 
-            int publishedTweets = 0;
-            int failedTweets = 0;
-
             TweetinviConfig.CurrentThreadSettings.TweetMode = TweetMode.Extended;
             try
             {
@@ -48,60 +46,17 @@ namespace SpinTwitter
                 Auth.SetCredentials(creds);
 
                 var user = await UserAsync.GetAuthenticatedUser();
-                logger.Info($"User is {user.Id}");
-                var lastPublished = GetLastPublished();
+                logger.Info($"Twitter user is {user.Id}");
+                PersistenceRss lastPublished = GetLastPublished();
                 logger.Info($"Last published entered: {lastPublished.LastEntered} verified: {lastPublished.LastVerified}");
-
-                using SpinRss rss = new SpinRss();
-
-                try
+                var httpClient = new HttpClient();
+                MastodonProvider mastodon = new MastodonProvider(httpClient, "https://botsin.space", Settings.MastodonAccessToken);
+                SpinRss rss = new SpinRss(httpClient);
                 {
-                    var rateLimits = RateLimit.GetCurrentCredentialsRateLimits();
-                    if (rateLimits is null)
+                    while (true)
                     {
-                        string errorMessage = "Couldn't retrieve rate limits, will exit since something went wrong";
-                        logger.Error(errorMessage);
-                        exceptionless.CreateException(new Exception(errorMessage)).Submit();
+                        await LoopAsync(rss, mastodon, exceptionless, lastPublished, default);
                     }
-                    else
-                    {
-                        logger.Info("Rate limit access remaining {0}, reset on {1}",
-                            rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
-                    }
-
-                    var rssEnteredItems = await rss.GetFeedAsync(SpinRssType.Entered, CancellationToken.None);
-                    var rssVerifiedItems = await rss.GetFeedAsync(SpinRssType.Verified, CancellationToken.None);
-
-                    var newValues = rssEnteredItems.TakeNew(lastPublished.LastEntered).Reverse()
-                        .Union(rssVerifiedItems.TakeNew(lastPublished.LastVerified).Reverse())
-                        .ToImmutableArray();
-
-                    logger.Info($"There are {newValues.Length} new tweets to publish");
-                    foreach (var item in newValues)
-                    {
-                        bool success = ProcessRssItem(exceptionless, lastPublished, item);
-                        if (success)
-                        {
-                            publishedTweets++;
-                            switch (item.Type)
-                            {
-                                case SpinRssType.Entered:
-                                    lastPublished.LastEntered = item.Id;
-                                    break;
-                                case SpinRssType.Verified:
-                                    lastPublished.LastVerified = item.Id;
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            failedTweets++;
-                        }
-                    }
-                }
-                finally
-                {
-                    StoreLastPublished(lastPublished);
                 }
             }
             catch (Exception ex)
@@ -109,13 +64,95 @@ namespace SpinTwitter
                 ex.ToExceptionless().Submit();
                 logger.Error(ex, "General failure");
             }
-            exceptionless.CreateLog($"Done sweep with published {publishedTweets} and {failedTweets} failures", Exceptionless.Logging.LogLevel.Info).Submit();
             exceptionless.ProcessQueue();
         }
 
-        static bool ProcessRssItem(ExceptionlessClient exceptionless, PersistenceRss lastPublished, RssItem item)
+        static async Task LoopAsync(SpinRss rss, MastodonProvider mastodon, ExceptionlessClient exceptionless, PersistenceRss lastPublished, CancellationToken ct)
         {
-            string tweetmsg = CreateTweet(item);
+            int publishedTweets = 0;
+            int failedTweets = 0;
+
+            try
+            {
+                var rateLimits = RateLimit.GetCurrentCredentialsRateLimits();
+                if (rateLimits is null)
+                {
+                    string errorMessage = "Couldn't retrieve rate limits, will exit since something went wrong";
+                    logger.Error(errorMessage);
+                    exceptionless.CreateException(new Exception(errorMessage)).Submit();
+                }
+                else
+                {
+                    logger.Info("Rate limit access remaining {0}, reset on {1}",
+                        rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
+                }
+
+                var rssEnteredItems = await rss.GetFeedAsync(SpinRssType.Entered, CancellationToken.None);
+                var rssVerifiedItems = await rss.GetFeedAsync(SpinRssType.Verified, CancellationToken.None);
+
+                var newValues = rssEnteredItems.TakeNew(lastPublished.LastEntered).Reverse()
+                    .Union(rssVerifiedItems.TakeNew(lastPublished.LastVerified).Reverse())
+                    .ToImmutableArray();
+
+                logger.Info($"There are {newValues.Length} new tweets to publish");
+                foreach (var item in newValues)
+                {
+                    bool tweetSuccess = ProcessTwitterRssItem(exceptionless, item);
+                    bool mastodonSuccess = await ProcessMastodonRssItem(mastodon, exceptionless, item, ct);
+                    if (tweetSuccess && mastodonSuccess)
+                    {
+                        publishedTweets++;
+                        switch (item.Type)
+                        {
+                            case SpinRssType.Entered:
+                                lastPublished.LastEntered = item.Id;
+                                break;
+                            case SpinRssType.Verified:
+                                lastPublished.LastVerified = item.Id;
+                                break;
+                        }
+                        StoreLastPublished(lastPublished);
+                        logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
+
+                    }
+                    else
+                    {
+                        failedTweets++;
+                    }
+                }
+            }
+            finally
+            {
+                StoreLastPublished(lastPublished);
+                exceptionless.CreateLog($"Done sweep with published {publishedTweets} and {failedTweets} failures", Exceptionless.Logging.LogLevel.Info).Submit();
+            }
+        }
+        static async Task<bool> ProcessMastodonRssItem(MastodonProvider provider, ExceptionlessClient exceptionless, RssItem item, CancellationToken ct)
+        { 
+            // TODO retrieve max length from server
+            string toot = CreateMessage(item, 500);
+            try
+            {
+                string key = $"{item.Type}_{item.Id}";
+                var response = await provider.TootAsync(toot, key, ct: ct);
+                if (!response.IsSuccess)
+                {
+                    string errorMessage = $"Failed publishing toot {key}: {response.StatusCode}: {response.ReasonPhrase}";
+                    logger.Error(errorMessage);
+                    exceptionless.CreateException(new Exception(errorMessage)).Submit();
+                }
+                return response.IsSuccess;
+            }
+            catch (Exception ex)
+            {
+                ex.ToExceptionless().Submit();
+                logger.Error(ex, "Failed publishing tweet");
+            }
+            return false;
+        }
+        static bool ProcessTwitterRssItem(ExceptionlessClient exceptionless, RssItem item)
+        {
+            string tweetmsg = CreateMessage(item, 270);
 
             logger.Info("Twitter message (length {1}) is '{0}'", tweetmsg, tweetmsg.Length);
 
@@ -140,10 +177,6 @@ namespace SpinTwitter
                 }
                 else
                 {
-                    //logger.Info("Published tweet {0} success.", tweet.Id);
-                    //lastPublished.Dates.Add(item.ReportDate);
-                    StoreLastPublished(lastPublished);
-                    logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
                     return true;
                 }
             }
@@ -155,9 +188,8 @@ namespace SpinTwitter
             return false;
         }
 
-        public static string CreateTweet(RssItem value)
+        public static string CreateMessage(RssItem value, int maxLen)
         {
-            const int maxLen = 270;
             string url = value.Link;
             string text = $"{value.Title}\n{value.Description}";
             string tweetmsg;

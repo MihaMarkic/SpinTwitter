@@ -7,9 +7,13 @@ using System.Threading.Tasks;
 
 namespace SpinTwitter.Services.Implementation
 {
-    public class SpinFeed: IDisposable
+    public sealed class SpinFeed: IDisposable
     {
-        readonly HttpClient client = new HttpClient();
+        readonly HttpClient client;
+        public SpinFeed(HttpClient client)
+        {
+            this.client = client;
+        }
 
         public void Dispose()
         {

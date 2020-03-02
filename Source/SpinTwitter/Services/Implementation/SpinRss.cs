@@ -10,11 +10,16 @@ using System.Xml.Linq;
 
 namespace SpinTwitter.Services.Implementation
 {
-    public class SpinRss: IDisposable
+    public class SpinRss
     {
         const string enteredRssUrl = "https://spin3.sos112.si/api/javno/ODRSS/true";
         const string verifiedRssUrl = "https://spin3.sos112.si/api/javno/ODRSS/false";
-        readonly  HttpClient client = new HttpClient();
+        readonly  HttpClient client;
+
+        public SpinRss(HttpClient client)
+        {
+            this.client = client;
+        }
 
         public async Task<ImmutableArray<RssItem>> GetFeedAsync(SpinRssType rssType, CancellationToken ct)
         {
@@ -56,11 +61,6 @@ namespace SpinTwitter.Services.Implementation
                 return result;
             }
             return null;
-        }
-
-        public void Dispose()
-        {
-            client.Dispose();
         }
     }
 
