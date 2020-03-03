@@ -14,5 +14,6 @@ public static class Settings
         public const string AccessToken = "***";
         public const string AccessTokenSecret = "***";
         public const string ExceptionlessKey = "***";
+    	public const string MastodonAccessToken = "***";
     }
 ```
