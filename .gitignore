@@ -126,3 +126,5 @@ Settings.Designer.cs
 # don't store artwork
 Artwork
 *.nogit.*
+/tools/**
+!/tools/packages.config
