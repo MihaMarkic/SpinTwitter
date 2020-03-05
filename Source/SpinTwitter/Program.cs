@@ -6,6 +6,7 @@ using SpinTwitter.Services.Implementation;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -21,9 +22,15 @@ namespace SpinTwitter
 {
     public class Program
     {
-        private const string PersistanceFileName = "persistance.json";
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-
+        const string PersistanceFileName = "persistance.json";
+        static readonly string PersistanceDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "state");
+        static readonly string PersistancePath = Path.Combine(PersistanceDirectory, PersistanceFileName);
+        static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        /// <summary>
+        /// Signals request to exit app.
+        /// </summary>
+        static readonly CancellationTokenSource cts = new CancellationTokenSource();
+        static readonly ManualResetEvent ended = new ManualResetEvent(false);
         static async Task Main(string[] args)
         {
             logger.Info("*********************\nStarting v" + Assembly.GetExecutingAssembly().GetName().Version);
@@ -36,6 +43,7 @@ namespace SpinTwitter
 #endif
 
             TweetinviConfig.CurrentThreadSettings.TweetMode = TweetMode.Extended;
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
             try
             {
                 var creds = new TwitterCredentials(
@@ -53,18 +61,42 @@ namespace SpinTwitter
                 MastodonProvider mastodon = new MastodonProvider(httpClient, "https://botsin.space", Settings.MastodonAccessToken);
                 SpinRss rss = new SpinRss(httpClient);
                 {
-                    while (true)
+                    while (!cts.IsCancellationRequested)
                     {
-                        await LoopAsync(rss, mastodon, exceptionless, lastPublished, default);
+                        Task span = Task.Delay(TimeSpan.FromMinutes(5), cts.Token);
+                        await LoopAsync(rss, mastodon, exceptionless, lastPublished, cts.Token);
+                        await span;
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                logger.Info("Main loop was cancelled");
             }
             catch (Exception ex)
             {
                 ex.ToExceptionless().Submit();
                 logger.Error(ex, "General failure");
             }
-            exceptionless.ProcessQueue();
+            finally
+            {
+                exceptionless.ProcessQueue();
+                ended.Set();
+            }
+            if (Debugger.IsAttached)
+            {
+                Console.WriteLine("Press ENTER to exit");
+                Console.ReadLine();
+            }
+        }
+
+        static void CurrentDomain_ProcessExit(object? sender, EventArgs e)
+        {
+            logger.Info("Exit request received");
+            cts.Cancel();
+            logger.Info("Waiting for end");
+            ended.WaitOne();
+            logger.Info("Ended confirmed");
         }
 
         static async Task LoopAsync(SpinRss rss, MastodonProvider mastodon, ExceptionlessClient exceptionless, PersistenceRss lastPublished, CancellationToken ct)
@@ -113,7 +145,6 @@ namespace SpinTwitter
                         }
                         StoreLastPublished(lastPublished);
                         logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
-
                     }
                     else
                     {
@@ -123,13 +154,12 @@ namespace SpinTwitter
             }
             finally
             {
-                StoreLastPublished(lastPublished);
                 exceptionless.CreateLog($"Done sweep with published {publishedTweets} and {failedTweets} failures", Exceptionless.Logging.LogLevel.Info).Submit();
             }
         }
         static async Task<bool> ProcessMastodonRssItem(MastodonProvider provider, ExceptionlessClient exceptionless, RssItem item, CancellationToken ct)
         { 
-            // TODO retrieve max length from server
+            // TODO retrieve max length from server when API becomes available
             string toot = CreateMessage(item, 500);
             try
             {
@@ -209,10 +239,9 @@ namespace SpinTwitter
 
         static PersistenceRss GetLastPublished()
         {
-            string fileName = GetFilePath(PersistanceFileName);
-            if (File.Exists(fileName))
+            if (File.Exists(PersistancePath))
             {
-                string content = File.ReadAllText(fileName);
+                string content = File.ReadAllText(PersistancePath);
                 var persistance = JsonConvert.DeserializeObject<PersistenceRss>(content);
                 return persistance;
             }
@@ -222,17 +251,15 @@ namespace SpinTwitter
 
         static void StoreLastPublished(PersistenceRss value)
         {
-            string fileName = GetFilePath(PersistanceFileName);
-            if (File.Exists(fileName))
+            if (!Directory.Exists(PersistanceDirectory))
             {
-                File.Delete(fileName);
+                Directory.CreateDirectory(PersistanceDirectory);
             }
-            File.WriteAllText(fileName, JsonConvert.SerializeObject(value));
-        }
-
-        static string GetFilePath(string name)
-        {
-            return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, name);
+            if (File.Exists(PersistancePath))
+            {
+                File.Delete(PersistancePath);
+            }
+            File.WriteAllText(PersistancePath, JsonConvert.SerializeObject(value));
         }
 
         //static string GetShortenUrl(HttpClient client, string originalUrl)
@@ -269,7 +296,7 @@ namespace SpinTwitter
             }
             else
             {
-                return items.TakeWhile(i => i.Id != last.Value);
+                return items.TakeWhile(i => i.Id > last.Value);
             }
         }
     }

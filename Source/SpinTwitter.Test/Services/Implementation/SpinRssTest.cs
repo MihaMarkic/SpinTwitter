@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using SpinTwitter.Services.Implementation;
+using System.Net.Http;
 
 namespace SpinTwitter.Test.Services.Implementation
 {
@@ -10,7 +11,7 @@ namespace SpinTwitter.Test.Services.Implementation
         [SetUp]
         public void Setup()
         {
-            target = new SpinRss();
+            target = new SpinRss(new HttpClient());
         }
         [TestFixture]
         public class ExtractId: SpinRssTest
