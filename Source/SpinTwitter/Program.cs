@@ -122,16 +122,19 @@ namespace SpinTwitter
                 var rssEnteredItems = await rss.GetFeedAsync(SpinRssType.Entered, CancellationToken.None);
                 var rssVerifiedItems = await rss.GetFeedAsync(SpinRssType.Verified, CancellationToken.None);
 
-                var newValues = rssEnteredItems.TakeNew(lastPublished.LastEntered).Reverse()
-                    .Union(rssVerifiedItems.TakeNew(lastPublished.LastVerified).Reverse())
-                    .ToImmutableArray();
+                var newEnteredItems = rssEnteredItems.TakeNew(lastPublished.LastEntered).Reverse().ToImmutableArray();
+                var newVerifiedItems = rssVerifiedItems.TakeNew(lastPublished.LastVerified).Reverse().ToImmutableArray();
+                logger.Info($"{newEnteredItems.Length} new entered:{string.Join(", ", newEnteredItems.Select(i => i.Id))}");
+                logger.Info($"{newVerifiedItems.Length} new verified:{string.Join(", ", newVerifiedItems.Select(i => i.Id))}");
+                var newValues = newEnteredItems.Union(newVerifiedItems).ToImmutableArray();
 
-                logger.Info($"There are {newValues.Length} new tweets to publish");
+                logger.Info($"There are total {newValues.Length} new tweets to publish");
                 foreach (var item in newValues)
                 {
+                    logger.Info($"Publishing {item.Type}:{item.Id}");
                     bool tweetSuccess = ProcessTwitterRssItem(exceptionless, item);
                     bool mastodonSuccess = await ProcessMastodonRssItem(mastodon, exceptionless, item, ct);
-                    if (tweetSuccess && mastodonSuccess)
+                    //if (tweetSuccess && mastodonSuccess)
                     {
                         publishedTweets++;
                         switch (item.Type)
@@ -146,10 +149,10 @@ namespace SpinTwitter
                         StoreLastPublished(lastPublished);
                         logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
                     }
-                    else
-                    {
-                        failedTweets++;
-                    }
+                    //else
+                    //{
+                    //    failedTweets++;
+                    //}
                 }
             }
             finally
@@ -184,7 +187,7 @@ namespace SpinTwitter
         {
             string tweetmsg = CreateMessage(item, 270);
 
-            logger.Info("Twitter message (length {1}) is '{0}'", tweetmsg, tweetmsg.Length);
+            logger.Info($"Twitter message length is {tweetmsg.Length}", tweetmsg, tweetmsg.Length);
 
             try
             {
