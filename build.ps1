@@ -38,7 +38,7 @@ https://cakebuild.net
 [CmdletBinding()]
 Param(
     [string]$Script = "appbuild.cake",
-    [ValidateSet("GetVersion", "BuildImage")]
+    [ValidateSet("GetVersion", "IncreaseVersion", "BuildImage")]
     [string]$Target,
     [string]$Configuration,
     [ValidateSet("Quiet", "Minimal", "Normal", "Verbose", "Diagnostic")]
