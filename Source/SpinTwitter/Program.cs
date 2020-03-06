@@ -109,7 +109,7 @@ namespace SpinTwitter
                 var rateLimits = RateLimit.GetCurrentCredentialsRateLimits(useRateLimitCache: true);
                 if (rateLimits is null)
                 {
-                    string errorMessage = "Couldn't retrieve rate limits, will exit since something went wrong";
+                    string errorMessage = "Couldn't retrieve rate limits";
                     logger.Warn(errorMessage);
                     //exceptionless.CreateException(new Exception(errorMessage)).Submit();
                 }
@@ -124,11 +124,20 @@ namespace SpinTwitter
 
                 var newEnteredItems = rssEnteredItems.TakeNew(lastPublished.LastEntered).Reverse().ToImmutableArray();
                 var newVerifiedItems = rssVerifiedItems.TakeNew(lastPublished.LastVerified).Reverse().ToImmutableArray();
-                logger.Info($"{newEnteredItems.Length} new entered:{string.Join(", ", newEnteredItems.Select(i => i.Id))}");
-                logger.Info($"{newVerifiedItems.Length} new verified:{string.Join(", ", newVerifiedItems.Select(i => i.Id))}");
                 var newValues = newEnteredItems.Union(newVerifiedItems).ToImmutableArray();
 
-                logger.Info($"There are total {newValues.Length} new tweets to publish");
+                if (newValues.Length > 0)
+                {
+                    if (newEnteredItems.Length > 0)
+                    {
+                        logger.Info($"{newEnteredItems.Length} new entered:{string.Join(", ", newEnteredItems.Select(i => i.Id))}");
+                    }
+                    if (newVerifiedItems.Length > 0)
+                    {
+                        logger.Info($"{newVerifiedItems.Length} new verified:{string.Join(", ", newVerifiedItems.Select(i => i.Id))}");
+                    }
+                    logger.Info($"There are total {newValues.Length} new tweets to publish");
+                }
                 foreach (var item in newValues)
                 {
                     logger.Info($"Publishing {item.Type}:{item.Id}");
