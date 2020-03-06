@@ -137,31 +137,35 @@ namespace SpinTwitter
                         logger.Info($"{newVerifiedItems.Length} new verified:{string.Join(", ", newVerifiedItems.Select(i => i.Id))}");
                     }
                     logger.Info($"There are total {newValues.Length} new tweets to publish");
-                }
-                foreach (var item in newValues)
-                {
-                    logger.Info($"Publishing {item.Type}:{item.Id}");
-                    bool tweetSuccess = ProcessTwitterRssItem(exceptionless, item);
-                    bool mastodonSuccess = await ProcessMastodonRssItem(mastodon, exceptionless, item, ct);
-                    //if (tweetSuccess && mastodonSuccess)
+                    foreach (var item in newValues)
                     {
-                        publishedTweets++;
-                        switch (item.Type)
+                        logger.Info($"Publishing {item.Type}:{item.Id}");
+                        bool tweetSuccess = ProcessTwitterRssItem(exceptionless, item);
+                        bool mastodonSuccess = await ProcessMastodonRssItem(mastodon, exceptionless, item, ct);
+                        //if (tweetSuccess && mastodonSuccess)
                         {
-                            case SpinRssType.Entered:
-                                lastPublished.LastEntered = item.Id;
-                                break;
-                            case SpinRssType.Verified:
-                                lastPublished.LastVerified = item.Id;
-                                break;
+                            publishedTweets++;
+                            switch (item.Type)
+                            {
+                                case SpinRssType.Entered:
+                                    lastPublished.LastEntered = item.Id;
+                                    break;
+                                case SpinRssType.Verified:
+                                    lastPublished.LastVerified = item.Id;
+                                    break;
+                            }
+                            StoreLastPublished(lastPublished);
+                            logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
                         }
-                        StoreLastPublished(lastPublished);
-                        logger.Info("Tweet publication state persisted with lastPublished {0}", lastPublished);
+                        //else
+                        //{
+                        //    failedTweets++;
+                        //}
                     }
-                    //else
-                    //{
-                    //    failedTweets++;
-                    //}
+                }
+                else
+                {
+                    logger.Info("No new entries");
                 }
             }
             finally
