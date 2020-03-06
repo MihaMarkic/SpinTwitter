@@ -106,12 +106,12 @@ namespace SpinTwitter
 
             try
             {
-                var rateLimits = RateLimit.GetCurrentCredentialsRateLimits();
+                var rateLimits = RateLimit.GetCurrentCredentialsRateLimits(useRateLimitCache: true);
                 if (rateLimits is null)
                 {
                     string errorMessage = "Couldn't retrieve rate limits, will exit since something went wrong";
-                    logger.Error(errorMessage);
-                    exceptionless.CreateException(new Exception(errorMessage)).Submit();
+                    logger.Warn(errorMessage);
+                    //exceptionless.CreateException(new Exception(errorMessage)).Submit();
                 }
                 else
                 {
@@ -198,7 +198,7 @@ namespace SpinTwitter
 
                     if (exception != null)
                     {
-                        string errorMessage = $"Failed publishing tweet, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.FirstOrDefault()?.Message}'";
+                        string errorMessage = $"Failed publishing tweet {item.Id} of length {tweetmsg.Length}, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.FirstOrDefault()?.Message}'";
                         logger.Error(errorMessage);
                         exceptionless.CreateException(new Exception(errorMessage)).Submit();
                     }
