@@ -168,10 +168,12 @@ namespace SpinTwitter
                     logger.Info("No new entries");
                 }
             }
-            finally
+            catch (Exception ex)
             {
-                exceptionless.CreateLog($"Done sweep with published {publishedTweets} and {failedTweets} failures", Exceptionless.Logging.LogLevel.Info).Submit();
+                ex.ToExceptionless().SetMessage("Failed processing loop").Submit();
+                logger.Error(ex, "Failed processing loop");
             }
+            exceptionless.CreateLog($"Done sweep with published {publishedTweets} and {failedTweets} failures", Exceptionless.Logging.LogLevel.Info).Submit();
         }
         static async Task<bool> ProcessMastodonRssItem(MastodonProvider provider, ExceptionlessClient exceptionless, RssItem item, CancellationToken ct)
         { 
