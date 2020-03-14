@@ -1,4 +1,7 @@
-﻿using SpinTwitter.Models;
+﻿using Exceptionless;
+using NLog;
+using Polly;
+using SpinTwitter.Models;
 using System;
 using System.Collections.Immutable;
 using System.IO;
@@ -6,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace SpinTwitter.Services.Implementation
@@ -14,6 +18,7 @@ namespace SpinTwitter.Services.Implementation
     {
         const string enteredRssUrl = "https://spin3.sos112.si/api/javno/ODRSS/true";
         const string verifiedRssUrl = "https://spin3.sos112.si/api/javno/ODRSS/false";
+        static readonly Logger logger = LogManager.GetCurrentClassLogger();
         readonly  HttpClient client;
 
         public SpinRss(HttpClient client)
@@ -29,12 +34,26 @@ namespace SpinTwitter.Services.Implementation
                 SpinRssType.Verified => verifiedRssUrl,
                 _ => throw new ArgumentOutOfRangeException(nameof(rssType))
             };
-            using (Stream content = await client.GetStreamAsync(rssUrl))
+            var policy = Policy
+                .Handle<Exception>()
+                .WaitAndRetryAsync(5, 
+                    sleepDurationProvider: retryCount => TimeSpan.FromSeconds(10), 
+                    onRetry: (ex, retryCount) =>
+                    {
+                        logger.Warn(ex, $"Failed feed retrieval #{retryCount}");
+                        ExceptionlessClient.Default.CreateLog($"Failed feed retrieval #{retryCount} with exception {ex.Message}");
+                    }
+                );
+
+            return await policy.ExecuteAsync(async () =>
             {
-                var doc = XDocument.Load(content);
-                var result = doc.Root.Element("channel").Elements("item").Select(e => ConvertToItem(rssType, e)).ToImmutableArray();
-                return result;
-            }
+                using (Stream content = await client.GetStreamAsync(rssUrl))
+                {
+                    var doc = XDocument.Load(content);
+                    var result = doc.Root.Element("channel").Elements("item").Select(e => ConvertToItem(rssType, e)).ToImmutableArray();
+                    return result;
+                }
+            });
         }
         RssItem ConvertToItem(SpinRssType type, XElement source)
         {
