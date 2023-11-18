@@ -1,5 +1,4 @@
 ﻿using Exceptionless;
-using Newtonsoft.Json;
 using NLog;
 using SpinTwitter.Models;
 using SpinTwitter.Services.Implementation;
@@ -12,19 +11,18 @@ using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Tweetinvi;
-using Tweetinvi.Models;
 
 [assembly: InternalsVisibleTo("SpinTwitter.Test")]
 namespace SpinTwitter
 {
     public class Program
     {
-        const string PersistanceFileName = "persistance.json";
-        static readonly string PersistanceDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "state");
-        static readonly string PersistancePath = Path.Combine(PersistanceDirectory, PersistanceFileName);
+        const string PersistenceFileName = "persistance.json";
+        static readonly string PersistenceDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "state");
+        static readonly string PersistencePath = Path.Combine(PersistenceDirectory, PersistenceFileName);
         static readonly Logger logger = LogManager.GetCurrentClassLogger();
         /// <summary>
         /// Signals request to exit app.
@@ -42,19 +40,9 @@ namespace SpinTwitter
             exceptionless.CreateLog("Started sweep", Exceptionless.Logging.LogLevel.Info).Submit();
 #endif
 
-            TweetinviConfig.CurrentThreadSettings.TweetMode = TweetMode.Extended;
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
             try
             {
-                var creds = new TwitterCredentials(
-                    Settings.ConsumerKey,
-                    Settings.ConsumerSecret,
-                    Settings.AccessToken,
-                    Settings.AccessTokenSecret);
-                Auth.SetCredentials(creds);
-
-                var user = await UserAsync.GetAuthenticatedUser();
-                logger.Info($"Twitter user is {user.Id}");
                 PersistenceRss lastPublished = GetLastPublished();
                 logger.Info($"Last published entered: {lastPublished.LastEntered} verified: {lastPublished.LastVerified}");
                 var httpClient = new HttpClient();
@@ -80,7 +68,7 @@ namespace SpinTwitter
             }
             finally
             {
-                exceptionless.ProcessQueue();
+                await exceptionless.ProcessQueueAsync();
                 ended.Set();
             }
             if (Debugger.IsAttached)
@@ -99,26 +87,14 @@ namespace SpinTwitter
             logger.Info("Ended confirmed");
         }
 
-        static async Task LoopAsync(SpinRss rss, MastodonProvider mastodon, ExceptionlessClient exceptionless, PersistenceRss lastPublished, CancellationToken ct)
+        static async Task LoopAsync(SpinRss rss, MastodonProvider mastodon, ExceptionlessClient exceptionless, 
+            PersistenceRss lastPublished, CancellationToken ct)
         {
             int publishedTweets = 0;
             int failedTweets = 0;
 
             try
             {
-                var rateLimits = RateLimit.GetCurrentCredentialsRateLimits(useRateLimitCache: true);
-                if (rateLimits is null)
-                {
-                    string errorMessage = "Couldn't retrieve rate limits";
-                    logger.Warn(errorMessage);
-                    //exceptionless.CreateException(new Exception(errorMessage)).Submit();
-                }
-                else
-                {
-                    logger.Info("Rate limit access remaining {0}, reset on {1}",
-                        rateLimits.StatusesHomeTimelineLimit.Remaining, rateLimits.StatusesHomeTimelineLimit.ResetDateTime);
-                }
-
                 var rssEnteredItems = await rss.GetFeedAsync(SpinRssType.Entered, CancellationToken.None);
                 var rssVerifiedItems = await rss.GetFeedAsync(SpinRssType.Verified, CancellationToken.None);
 
@@ -140,7 +116,6 @@ namespace SpinTwitter
                     foreach (var item in newValues)
                     {
                         logger.Info($"Publishing {item.Type}:{item.Id}");
-                        bool tweetSuccess = ProcessTwitterRssItem(exceptionless, item);
                         bool mastodonSuccess = await ProcessMastodonRssItem(mastodon, exceptionless, item, ct);
                         //if (tweetSuccess && mastodonSuccess)
                         {
@@ -198,70 +173,32 @@ namespace SpinTwitter
             }
             return false;
         }
-        static bool ProcessTwitterRssItem(ExceptionlessClient exceptionless, RssItem item)
-        {
-            string tweetmsg = CreateMessage(item, 270);
-
-            logger.Info($"Twitter message length is {tweetmsg.Length}", tweetmsg, tweetmsg.Length);
-
-            try
-            {
-                var tweet = Tweet.PublishTweet(tweetmsg);
-                if (tweet == null)
-                {
-                    var exception = ExceptionHandler.GetLastException();
-
-                    if (exception != null)
-                    {
-                        string errorMessage = $"Failed publishing tweet {item.Id} of length {tweetmsg.Length}, got null as ITweet: StatusCode={exception.StatusCode} Description='{exception.TwitterDescription}' Details='{exception.TwitterExceptionInfos.FirstOrDefault()?.Message}'";
-                        logger.Error(errorMessage);
-                        exceptionless.CreateException(new Exception(errorMessage)).Submit();
-                    }
-                    else
-                    {
-                        logger.Error("Failed publishing tweet, got null as ITweet without exception");
-                    }
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                ex.ToExceptionless().Submit();
-                logger.Error(ex, "Failed publishing tweet");
-            }
-            return false;
-        }
-
         public static string CreateMessage(RssItem value, int maxLen)
         {
             string url = value.Link;
             string text = $"{value.Title}\n{value.Description}";
-            string tweetmsg;
+            string message;
             int maxLenWithoutUrl = maxLen - url.Length;
             if (text.Length > maxLenWithoutUrl)
             {
                 const string ellipsis = "...\n";
                 int maxLenWithEllipsis = maxLenWithoutUrl - ellipsis.Length;
-                tweetmsg = $"{text.Substring(0, maxLenWithEllipsis)}{ellipsis}{url}";
+                message = $"{text.Substring(0, maxLenWithEllipsis)}{ellipsis}{url}";
             }
             else
             {
-                tweetmsg = $"{ text.Substring(0, Math.Min(text.Length, maxLen - 1))}\n{url}";
+                message = $"{ text.Substring(0, Math.Min(text.Length, maxLen - 1))}\n{url}";
             }
-            return tweetmsg;
+            return message;
         }
 
         static PersistenceRss GetLastPublished()
         {
-            if (File.Exists(PersistancePath))
+            if (File.Exists(PersistencePath))
             {
-                string content = File.ReadAllText(PersistancePath);
-                var persistance = JsonConvert.DeserializeObject<PersistenceRss>(content);
-                return persistance;
+                string content = File.ReadAllText(PersistencePath);
+                var persistence = JsonSerializer.Deserialize<PersistenceRss>(content);
+                return persistence ?? new PersistenceRss();
             }
             else
                 return new PersistenceRss();
@@ -269,15 +206,15 @@ namespace SpinTwitter
 
         static void StoreLastPublished(PersistenceRss value)
         {
-            if (!Directory.Exists(PersistanceDirectory))
+            if (!Directory.Exists(PersistenceDirectory))
             {
-                Directory.CreateDirectory(PersistanceDirectory);
+                Directory.CreateDirectory(PersistenceDirectory);
             }
-            if (File.Exists(PersistancePath))
+            if (File.Exists(PersistencePath))
             {
-                File.Delete(PersistancePath);
+                File.Delete(PersistencePath);
             }
-            File.WriteAllText(PersistancePath, JsonConvert.SerializeObject(value));
+            File.WriteAllText(PersistencePath, JsonSerializer.Serialize(value));
         }
 
         //static string GetShortenUrl(HttpClient client, string originalUrl)

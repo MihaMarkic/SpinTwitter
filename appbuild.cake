@@ -125,7 +125,7 @@ Task("IncreaseVersion")
 
 Task("Default")
     .Does(() => { 
-		Information("KzsParser build process targets");
+		Information("SpinNotifications build process targets");
 		foreach (string target in new string[]{"Default", "BuildImage", "GetVersion", "SetVersion", "IncreaseVersion"})
 		{
 			Information($"\t{target}");

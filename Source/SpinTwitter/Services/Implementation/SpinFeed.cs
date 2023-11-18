@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using SpinTwitter.Models;
+﻿using SpinTwitter.Models;
 using System;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,16 +20,16 @@ namespace SpinTwitter.Services.Implementation
             client.Dispose();
         }
 
-        public async Task<Root> GetFeedAsync(CancellationToken ct)
+        public async Task<Root?> GetFeedAsync(CancellationToken ct)
         {
             var text = await client.GetStringAsync("https://spin3.sos112.si/api/javno/lokacija");
             var data = ConvertFromString(text);
             return data;
         }
 
-        public static Root ConvertFromString(string text)
+        public static Root? ConvertFromString(string text)
         {
-            return JsonConvert.DeserializeObject<Root>(text); ;
+            return JsonSerializer.Deserialize<Root>(text); ;
         }
     }
 }
