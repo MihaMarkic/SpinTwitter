@@ -1,0 +1,5 @@
+﻿### GET request to example server
+GET https://spin3.sos112.si/api/javno/ODRSS/true
+    ?generated-in=JetBrains Rider
+
+###

@@ -18,7 +18,7 @@ namespace SpinTwitter.Models
         /// <summary>
         /// Reason phrase given by response.
         /// </summary>
-        public string ReasonPhrase { get; }
+        public string? ReasonPhrase { get; }
         /// <summary>
         /// The body of response.
         /// </summary>
@@ -30,7 +30,7 @@ namespace SpinTwitter.Models
         /// <param name="statusCode"></param>
         /// <param name="reasonPhrase"></param>
         /// <param name="body"></param>
-        internal TootResponse(bool isSuccess, HttpStatusCode statusCode, string reasonPhrase, string body)
+        internal TootResponse(bool isSuccess, HttpStatusCode statusCode, string? reasonPhrase, string body)
         {
             IsSuccess = isSuccess;
             StatusCode = statusCode;

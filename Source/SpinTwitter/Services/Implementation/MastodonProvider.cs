@@ -15,9 +15,9 @@ namespace SpinTwitter.Services.Implementation
     /// </summary>
     public sealed class MastodonProvider
     {
-        readonly HttpClient httpClient;
-        readonly string hostName;
-        readonly string accessToken;
+        readonly HttpClient _httpClient;
+        readonly string _hostName;
+        readonly string _accessToken;
         /// <summary>
         /// Creates an object for sending toots to Mastodon using access-token.
         ///
@@ -25,9 +25,9 @@ namespace SpinTwitter.Services.Implementation
         /// </summary>
         public MastodonProvider(HttpClient httpClient, string hostName, string accessToken)
         {
-            this.httpClient = httpClient;
-            this.hostName = hostName?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(hostName));
-            this.accessToken = accessToken ?? throw new ArgumentNullException(nameof(accessToken)); ;
+            this._httpClient = httpClient;
+            this._hostName = hostName?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(hostName));
+            this._accessToken = accessToken ?? throw new ArgumentNullException(nameof(accessToken));
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace SpinTwitter.Services.Implementation
                 { "visibility", visibility.ToString().ToLower(CultureInfo.InvariantCulture) }
             };
 
-            return SendRequestAsync($"{hostName}/api/v1/statuses", data, idempotencyKey, ct);
+            return SendRequestAsync($"{_hostName}/api/v1/statuses", data, idempotencyKey, ct);
         }
 
         static string DictionaryToJson(Dictionary<string, string> data)
@@ -52,14 +52,14 @@ namespace SpinTwitter.Services.Implementation
         async Task<TootResponse> SendRequestAsync(string url, Dictionary<string, string> data, string? idempotencyKey, CancellationToken ct)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Add("Authorization", $"Bearer {accessToken}");
+            request.Headers.Add("Authorization", $"Bearer {_accessToken}");
             if (!string.IsNullOrWhiteSpace(idempotencyKey))
             {
                 request.Headers.Add("Idempotency-Key", idempotencyKey);
             }
             request.Content =  new StringContent(DictionaryToJson(data), Encoding.UTF8, "application/json");
-            var response = await httpClient.SendAsync(request, ct);
-            string body = await response.Content.ReadAsStringAsync();
+            var response = await _httpClient.SendAsync(request, ct);
+            string body = await response.Content.ReadAsStringAsync(ct);
             return new TootResponse(response.IsSuccessStatusCode, response.StatusCode, response.ReasonPhrase, body);
         }
     }
