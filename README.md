@@ -1,3 +1,5 @@
+# Migrated to EU based [Codeberg](https://codeberg.org/mihamarkic/spin-mastodon)
+
 # About
 This console application pulls notifications from [SPIN Obvestila](https://spin.sos112.si/SPIN2/Javno/OD/) and pushes them to ~~twitter feed of [@SPINObvestila](https://twitter.com/spinobvestila)~~ Mastodon feed of [SPINObvestila](https://mastodon.world/@SpinObvestila) account. It is run periodically.
 # Build the project
